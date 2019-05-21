@@ -148,6 +148,7 @@ int main(void) {
     fscanf(write ,"%i" , &r);
     filling(&lst,t,o,A,B,r);
     }
+    fclose(write);
     calculate(&lst);
     printf("That's all!");
 }
