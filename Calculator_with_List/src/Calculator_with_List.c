@@ -1,7 +1,7 @@
 /*
  ============================================================================
- Name        : Simple_List.c
- Author      : Andrew Vorotyntsev
+ Name        : Queue.c
+ Author      : AndrewVorotyntsev
  Version     :
  Copyright   : Your copyright notice
  Description : Hello World in C, Ansi-style
@@ -11,50 +11,125 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <conio.h>
-#include <string.h>
 
+
+//Задаем функцию факториал
 float factorial(float n)
 {
     if (n == 0 || n == 1) return 1;
     return n * factorial(n - 1);
 }
 
-struct node {
+/* Определяем элемент очереди */
+typedef struct list_node {
+    struct list_node *next;
     int type;
     int oper;
     float *A;
     float *B;
-    int v;
-    struct node *next;
-};
+} list_node_t;
 
-typedef struct node Node;
+/* Определяем саму очередь */
+typedef struct list {
 
-struct list
+    int size;
+    /* начало списка */
+    list_node_t *head;
+    /* конец списка */
+    list_node_t *tail;
+} list_t;
+
+/* Инициализация массива */
+list_t * create_list(void)
 {
-    Node* head;
-    Node* tail;
-};
+    list_t *lt = malloc(sizeof(list_t));
 
-typedef struct list List;
+    lt->size = 0;
+    lt->head = NULL;
+    lt->tail = lt->head;
 
-
-
-void initializeList(List* lst)
-{
-    lst->head = 0;
-    lst->tail = 0;
+    return lt;
 }
 
-void filling(List* lst,int type, int oper,float *A,float *B, int v)
+
+//функция заполнения данными элементов списка
+void list_push_back(list_t *lt, int type, int oper,float *A,float *B)
 {
-    Node* t = (Node*) malloc(sizeof(Node));
-    t->type = type;
-    t->oper = oper;
-    t->A=A;
-    t->B=B;
-    t->v=v;
+    list_node_t * node = malloc(sizeof(list_node_t));
+    node->type=type;
+    node->oper=oper;
+    node->A=A;
+    node->B=B;
+    if(lt->tail != NULL)
+        lt->tail->next = node;
+    else {
+        lt->head = node;
+    }
+
+    lt->tail = node;
+    lt->size += 1;
+}
+
+
+
+void * list_pop(list_t *lt)
+{
+    if(lt->size == 0){
+        /* Список пуст */
+        return NULL;
+    }
+
+    list_node_t *node = lt->head;
+
+
+    lt->size -= 1;
+    //lt->head = node->next;
+
+    free(node);
+
+    if(lt->size == 0){
+        /* Это был последний элемент */
+        lt->head = NULL;
+        lt->tail = NULL;
+    }
+
+    //return lt->head;
+    lt->head = node->next;
+    return lt->head;
+}
+
+//struct element* getElement();
+
+//Список результатов
+typedef struct nodeResult
+{
+  float C; // значения
+  struct nodeResult *next; // указатель на следующий элемент
+}nodeResult;
+
+
+typedef struct listResult
+{
+    nodeResult* head;
+    nodeResult* tail;
+}listResult;
+
+
+
+
+listResult * initializelistResult(void)
+{
+    listResult* lt = malloc(sizeof(list_t));
+    lt->head = NULL;
+    lt->tail = lt->head;
+
+    return lt;
+}
+
+void putResult(listResult* lst ,float C)
+{
+    nodeResult* t = (nodeResult*) malloc(sizeof(nodeResult));
+    t->C=C;
     t->next = 0;
     if(lst->head == 0)
     {
@@ -66,89 +141,134 @@ void filling(List* lst,int type, int oper,float *A,float *B, int v)
     lst->tail = t;
 }
 
-void calculate(const List* const lst)
+
+void printResult(const listResult* const lst)
 {
     FILE *result ;
     result = fopen("Result.txt" , "w");
-    float *A,*B,e,d;
-    for(Node* tmp = lst->head; tmp; tmp = tmp->next)
-        {
-        if (tmp->type==1)
-        {
+    float p;
+    for(nodeResult* tmp = lst->head; tmp; tmp = tmp->next){
+        p = tmp->C;
+        fprintf(result,"%f\n",p);
+    }
+}
 
-        switch (tmp->oper)
+
+int main(void) {
+    //Инициализируем список для данных , открываем файл с данными
+    list_t *list = create_list();
+    FILE *write ;
+    write = fopen("Data.txt", "r");
+    int t,o,r,k;
+    float *A,*B,e,*C;
+    r = 1;
+    k = 0;
+    //Заполняем узлы списка данными
+    while(r == 1)
+    {
+        fscanf(write ,"%i" , &t);
+        A = malloc(t*sizeof(float));
+        B = malloc(t*sizeof(float));
+        fscanf(write ,"%i" , &o);
+        for (int y=0;y<t;y++){
+            fscanf(write,"%f", &A[y]);
+        }
+        for (int l=0;l<t;l++){
+            fscanf(write,"%f", &B[l]);
+        //if ((t == 1) || ((t > 1) && (o != 2)))
+        //    k = k + t;
+        }
+        if (t == 1)
+            k = k + 1;
+        if (t > 1)
+        {
+            if (o != 2)
+                k = k + t;
+            if (o == 2)
+                k = k + 1;
+        }
+        fscanf(write ,"%i" , &r);
+        list_push_back(list,t,o,A,B);
+    }
+    fclose(write);
+    C = malloc(k*sizeof(float));
+    int j;
+    j = 0;
+    //Производим вычисления , проходя через все элементы списка
+    for(list_node_t* node = list->head; node; node = node->next)
+    {
+        if (node->type==1)
+        {
+            switch (node->oper)
             {
                 case 0:
-                    fprintf(result,"_%f", tmp->A[0]+tmp->B[0]);
+                    C[j] = node->A[0]+node->B[0];
+                    j = j + 1;
                     break;
                 case 1:
-                    fprintf(result,"_%f", tmp->A[0]-tmp->B[0]);
+                    C[j] = node->A[0]-node->B[0];
+                    j = j + 1;
                     break ;
                 case 2:
-                    fprintf(result,"_%f", tmp->A[0]*tmp->B[0]);
+                    C[j] = node->A[0]*node->B[0];
+                    j = j + 1;
                     break ;
                 case 3:
-                    fprintf(result,"_%f", tmp->A[0]/tmp->B[0]);
-                   break;
+                    C[j] = node->A[0]/node->B[0];
+                    j = j + 1;
+                    break;
                 case 4:
-                    fprintf(result,"_%f", pow (tmp->A[0], tmp->B[0]));
+                    C[j] = pow(node->A[0],node->B[0]);
+                    j = j + 1;
                     break;
                 case 5:
-                    fprintf(result,"_%f", factorial(tmp->A[0]));
+                    C[j] = factorial(node->A[0]);
+                    j = j + 1;
                     break;
             }
         }
         else
-            {
-            switch (tmp->oper)
+        {
+            switch (node->oper)
+                {
+                case 0:
+                    for (int h=0;h<node->type;h++)
                     {
-                    case 0:
-                        for (int h=0;h<tmp->type;h++){
-                            fprintf(result,"_%f" , tmp->A[h]+tmp->B[h]);
-                        }
-                            break;
-                    case 1:
-                        for (int j=0;j<tmp->type;j++)
-                        {
-                            fprintf(result,"_%f" ,tmp->A[j]-tmp->B[j]);
-                        }   break ;
-                    case 2:
-                        e=0;
-                        for (int s=0;s<tmp->type;s++)
-                        {
-                            d=tmp->A[s]*tmp->B[s];
-                            e=e+d;
-                        }
-                        fprintf(result,"_%f", e);
-                        break;
+                        C[j] = node->A[h]+node->B[h];
+                        j = j + 1;
                     }
-            }
-
-
+                    break;
+                case 1:
+                    for (int u=0;u<node->type;u++)
+                    {
+                        C[j] = node->A[u]-node->B[u];
+                        j = j + 1;
+                    }
+                    break;
+                case 2:
+                    e=0;
+                    for (int s=0;s<node->type;s++)
+                    {
+                        float d;
+                        d=node->A[s]*node->B[s];
+                        e=e+d;
+                    }
+                    C[j] = e;
+                    j = j + 1;
+                    break;
                 }
+        }
+    if (j == k)
+        break;
+    }
+    //Открываем лист результатов и вводим туда данные ,затем печатаем в файл
+    listResult *answer = initializelistResult();
+    for (int w=0;w<j;w++)
+    {
+        putResult(answer ,C[w]);
+    }
+    printResult(answer);
+    puts("That's all!");
 }
 
-int main(void) {
-    List lst;
-    initializeList(&lst);
-    FILE *write ;
-    write = fopen("Data.txt", "r");
-    int t,o,r;
-    float *A,*B;
-    r = 1;
-    while(r == 1){
-    if (A != NULL) A = malloc(t*sizeof(float));
-    if (B != NULL) B = malloc(t*sizeof(float));
-    fscanf(write ,"%i" , &t);
-    fscanf(write ,"%i" , &o);
-    for (int k=0;k<t;k++)
-            fscanf(write,"%f", &A[k]);
-    for (int l=0;l<t;l++)
-            fscanf(write,"%f", &B[l]);
-    fscanf(write ,"%i" , &r);
-    filling(&lst,t,o,A,B,r);
-    }
-    fclose(write);
-    calculate(&lst);
-    printf("That's all!");
-}
+
